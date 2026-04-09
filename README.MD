@@ -1,3 +1,19 @@
+# Project Dashboard Overview
+
+The goal of this experiment is use my experience as a technical architect, and see if I can teach AI agents how to build with privacy, security and optimizations in mind.
+
+Each phase will have its own branch so that a record of this experiment is kept.
+
+## AI: CLAUDE (claude code VSCode)
+
+The `CLAUDE.MD` file is so that claude can keep reference and context as it keeps building.
+
+### NOTES | LESSONS LEARNED
+
+---
+
+## GENERIC NEXTJS SETUP README BELOW
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
