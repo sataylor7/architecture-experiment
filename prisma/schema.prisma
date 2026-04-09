@@ -1,0 +1,284 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String    @id @default(uuid())
+  email       String    @unique
+  role        Role      @default(client)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  authCodes   AuthCode[]
+  clients     Client[]
+  projects    Project[]
+  invoices    Invoice[]
+  tasks       Task[]
+}
+
+enum Role {
+  admin
+  client
+}
+
+model AuthCode {
+  id         String    @id @default(uuid())
+  userId     String
+  codeHash   String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  attempts   Int       @default(0)
+  ipAddress  String?
+  createdAt  DateTime  @default(now())
+
+  user       User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Client {
+  id           String    @id @default(uuid())
+  firstName    String
+  lastName     String
+  email        String    @unique
+  company      String?
+  socialMedia  Json?
+  userId       String
+  subscribed   Boolean   @default(false)
+  taxId        String?
+  measurements Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user         User      @relation(fields: [userId], references: [id])
+  projects     Project[]
+  invoices     Invoice[]
+
+  @@index([userId])
+  @@index([email])
+}
+
+model Project {
+  id          String        @id @default(uuid())
+  name        String
+  description String?
+  status      ProjectStatus @default(Draft)
+  notes       String?
+  dueDate     DateTime?
+  price       Decimal?      @db.Decimal(10, 2)
+  paid        Boolean       @default(false)
+  completed   Boolean       @default(false)
+  clientId    String
+  userId      String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  client       Client               @relation(fields: [clientId], references: [id])
+  user         User                 @relation(fields: [userId], references: [id])
+  tasks        Task[]
+  projectTypes ProjectProjectType[]
+  invoices     ProjectInvoice[]
+
+  @@index([clientId])
+  @@index([userId])
+  @@index([status])
+}
+
+enum ProjectStatus {
+  Draft
+  InProgress
+  Completed
+  OnHold
+  Cancelled
+}
+
+model Invoice {
+  id            String        @id @default(uuid())
+  invoiceNumber String        @unique
+  clientId      String
+  userId        String
+  status        InvoiceStatus @default(Draft)
+  issueDate     DateTime
+  dueDate       DateTime?
+  paidAt        DateTime?
+  subtotal      Decimal       @default(0) @db.Decimal(10, 2)
+  taxRate       Decimal       @default(0) @db.Decimal(5, 4)
+  taxAmount     Decimal       @default(0) @db.Decimal(10, 2)
+  total         Decimal       @default(0) @db.Decimal(10, 2)
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  client        Client           @relation(fields: [clientId], references: [id])
+  user          User             @relation(fields: [userId], references: [id])
+  lineItems     InvoiceLineItem[]
+  projects      ProjectInvoice[]
+
+  @@index([clientId])
+  @@index([userId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+enum InvoiceStatus {
+  Draft
+  Sent
+  Paid
+  Overdue
+  Cancelled
+}
+
+model ProjectInvoice {
+  projectId  String
+  invoiceId  String
+  linkedAt   DateTime @default(now())
+
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invoice    Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, invoiceId])
+}
+
+model InvoiceLineItem {
+  id          String   @id @default(uuid())
+  invoiceId   String
+  serviceId   String?
+  description String
+  quantity    Decimal  @default(1) @db.Decimal(10, 2)
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  lineTotal   Decimal  @db.Decimal(10, 2)
+  sortOrder   Int?
+  createdAt   DateTime @default(now())
+
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  service     Service? @relation(fields: [serviceId], references: [id])
+
+  @@index([invoiceId])
+}
+
+model Service {
+  id           String           @id @default(uuid())
+  name         String           @unique
+  description  String?
+  defaultPrice Decimal?         @db.Decimal(10, 2)
+  category     ServiceCategory?
+  active       Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  lineItems    InvoiceLineItem[]
+}
+
+enum ServiceCategory {
+  Website
+  Design
+  Sewing
+  Other
+}
+
+model Task {
+  id           String     @id @default(uuid())
+  projectId    String
+  parentTaskId String?
+  title        String
+  description  String?
+  status       TaskStatus @default(ToDo)
+  priority     Priority?  @default(Medium)
+  dueDate      DateTime?
+  completedAt  DateTime?
+  assignedTo   String?
+  sortOrder    Int?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent       Task?      @relation("TaskSubtasks", fields: [parentTaskId], references: [id])
+  subtasks     Task[]     @relation("TaskSubtasks")
+  assignee     User?      @relation(fields: [assignedTo], references: [id])
+
+  @@index([projectId])
+  @@index([parentTaskId])
+  @@index([status])
+  @@index([assignedTo])
+}
+
+enum TaskStatus {
+  ToDo
+  InProgress
+  Blocked
+  Done
+  Cancelled
+}
+
+enum Priority {
+  Low
+  Medium
+  High
+  Urgent
+}
+
+model ProjectType {
+  id                 String              @id @default(uuid())
+  name               String
+  category           TypeCategory
+  sewingSubcategory  SewingSubcategory?
+  description        String?
+  createdAt          DateTime            @default(now())
+
+  projects           ProjectProjectType[]
+  patternStyleDetail PatternStyleDetail?
+
+  @@index([category])
+}
+
+enum TypeCategory {
+  Website
+  Design
+  Sewing
+}
+
+enum SewingSubcategory {
+  Tailoring
+  Bespoke
+  Custom
+}
+
+model ProjectProjectType {
+  projectId     String
+  projectTypeId String
+  assignedAt    DateTime    @default(now())
+
+  project       Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectType   ProjectType @relation(fields: [projectTypeId], references: [id])
+
+  @@id([projectId, projectTypeId])
+}
+
+model PatternStyleDetail {
+  id                  String           @id @default(uuid())
+  patternStyleNumber  String
+  patternStyleTypeId  String
+  projectTypeId       String           @unique
+
+  patternStyleType    PatternStyleType @relation(fields: [patternStyleTypeId], references: [id])
+  projectType         ProjectType      @relation(fields: [projectTypeId], references: [id])
+}
+
+model PatternStyleType {
+  id              String               @id @default(uuid())
+  name            String               @unique
+  notes           String?
+  muslinMade      Boolean              @default(false)
+  dateMuslinMade  DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  patternStyleDetails PatternStyleDetail[]
+}
