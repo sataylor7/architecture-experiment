@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { RequestCodeSchema } from '@/lib/schemas/auth.schema';
 import { requestCode } from '@/services/auth.service';
+import { checkAuthRateLimit } from '@/lib/rate-limit';
 import { AppError } from '@/lib/errors';
 
 export async function POST(req: NextRequest) {
@@ -14,8 +15,16 @@ export async function POST(req: NextRequest) {
   const result = RequestCodeSchema.safeParse(body);
   if (!result.success) {
     return NextResponse.json(
-      { error: 'Validation failed', fields: result.error.flatten() },
+      { error: 'Validation failed', fields: result.error.issues },
       { status: 422 },
+    );
+  }
+
+  // Rate limit keyed on email (spec: 5 per email per 10 minutes)
+  if (!checkAuthRateLimit(result.data.email)) {
+    return NextResponse.json(
+      { error: 'Too many requests. Try again in 10 minutes.' },
+      { status: 429 },
     );
   }
 

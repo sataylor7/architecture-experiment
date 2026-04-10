@@ -28,9 +28,9 @@ export async function requestCode(email: string, ipAddress?: string): Promise<vo
     return;
   }
 
-  // Invalidate all prior active codes for this user
+  // Invalidate all prior active OTP codes for this user (exclude refresh token records)
   await prisma.authCode.updateMany({
-    where: { userId: user.id, usedAt: null },
+    where: { userId: user.id, usedAt: null, codeHash: { not: { startsWith: 'rt:' } } },
     data: { usedAt: new Date() },
   });
 
@@ -72,6 +72,7 @@ export async function verifyCode(
       userId: user.id,
       usedAt: null,
       expiresAt: { gt: new Date() },
+      codeHash: { not: { startsWith: 'rt:' } },
     },
     select: { id: true, codeHash: true, attempts: true },
     orderBy: { createdAt: 'desc' },

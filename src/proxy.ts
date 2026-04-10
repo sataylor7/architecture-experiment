@@ -57,17 +57,7 @@ export function proxy(req: NextRequest) {
   // ── Rate limiting ────────────────────────────────────────────────────────────
   const ip = req.headers.get('x-forwarded-for') ?? req.headers.get('x-real-ip') ?? 'unknown';
 
-  if (pathname.startsWith('/api/auth/request-code') || pathname.startsWith('/api/auth/verify-code')) {
-    // Auth routes: 5 per 10 minutes
-    const key = `auth:${ip}`;
-    const allowed = checkRateLimit(key, 5, 10 * 60 * 1000);
-    if (!allowed) {
-      return NextResponse.json(
-        { error: 'Too many requests. Try again in 10 minutes.' },
-        { status: 429, headers: { 'Retry-After': '600' } },
-      );
-    }
-  } else if (pathname.startsWith('/api/')) {
+  if (pathname.startsWith('/api/')) {
     // General API: 100 per minute
     const key = `api:${ip}`;
     const allowed = checkRateLimit(key, 100, 60 * 1000);
