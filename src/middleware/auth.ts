@@ -3,10 +3,11 @@ import { verifyAccessToken, JwtPayload } from '@/lib/jwt';
 
 export type AuthedRequest = NextRequest & { user: JwtPayload };
 
-export function withAuth(
-  handler: (req: AuthedRequest) => Promise<NextResponse>,
-): (req: NextRequest) => Promise<NextResponse> {
-  return async (req: NextRequest) => {
+type RouteContext = { params: Promise<Record<string, string>> };
+type Handler = (req: AuthedRequest, ctx?: RouteContext) => Promise<NextResponse>;
+
+export function withAuth(handler: Handler): (req: NextRequest, ctx?: RouteContext) => Promise<NextResponse> {
+  return async (req: NextRequest, ctx?: RouteContext) => {
     const authHeader = req.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -15,7 +16,7 @@ export function withAuth(
     try {
       const payload = verifyAccessToken(authHeader.slice(7));
       (req as AuthedRequest).user = payload;
-      return handler(req as AuthedRequest);
+      return handler(req as AuthedRequest, ctx);
     } catch {
       return NextResponse.json({ error: 'Token expired or invalid' }, { status: 401 });
     }
