@@ -91,5 +91,5 @@ export async function updateService(id: string, data: UpdateServiceInput) {
 export async function deleteService(id: string) {
   const existing = await prisma.service.findUnique({ where: { id }, select: { id: true } });
   if (!existing) throw new AppError(404, 'Service not found');
-  await prisma.service.delete({ where: { id } });
+  await prisma.service.delete({ where: { id }, select: { id: true } });
 }

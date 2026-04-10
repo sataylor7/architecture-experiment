@@ -2,7 +2,8 @@ import { prisma } from '@/lib/prisma';
 import { AppError } from '@/lib/errors';
 import type { CreateUserInput, UpdateUserInput, ListUsersInput } from '@/lib/schemas/user.schema';
 
-// Fields safe to return for any admin request — never expose deletedAt in payload
+// Admin-only response select — deletedAt is intentionally included so admins
+// can distinguish soft-deleted users when showDeleted=true is used.
 const userSelect = {
   id: true,
   email: true,
@@ -56,7 +57,7 @@ export async function createUser(data: CreateUserInput) {
   });
 
   if (existing) {
-    // Don't reveal soft-deleted account existence — treat as conflict
+    // Treat soft-deleted and active conflicts the same — do not reveal which
     throw new AppError(409, 'A user with that email already exists');
   }
 
@@ -96,5 +97,6 @@ export async function softDeleteUser(id: string) {
   await prisma.user.update({
     where: { id },
     data: { deletedAt: new Date() },
+    select: { id: true },
   });
 }

@@ -180,5 +180,5 @@ export async function deleteClient(id: string) {
   });
   if (!existing) throw new AppError(404, 'Client not found');
 
-  await prisma.client.delete({ where: { id } });
+  await prisma.client.delete({ where: { id }, select: { id: true } });
 }
