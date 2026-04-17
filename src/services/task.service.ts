@@ -24,10 +24,10 @@ const taskSelect = {
 const taskWithSubtasksSelect = {
   ...taskSelect,
   subtasks: {
-    orderBy: [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }],
+    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] as { sortOrder?: 'asc' | 'desc'; createdAt?: 'asc' | 'desc' }[],
     select: taskSelect,
   },
-} as const;
+};
 
 // ─── Depth guard ─────────────────────────────────────────────────────────────
 
