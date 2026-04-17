@@ -2,7 +2,28 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { apiJson } from '@/lib/api';
+import { apiJson, apiFetch } from '@/lib/api';
+import { decodeTokenPayload } from '@/lib/token-store';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 interface Client {
   id: string;
@@ -19,12 +40,25 @@ interface ListResponse {
   meta: { nextCursor: string | null; hasMore: boolean };
 }
 
+const emptyForm = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  company: '',
+  subscribed: false,
+};
+
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const load = useCallback(async (next?: string) => {
     setLoading(true);
@@ -44,66 +78,142 @@ export default function ClientsPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  function openNew() {
+    setForm(emptyForm);
+    setFormError(null);
+    setOpen(true);
+  }
+
+  async function handleSubmit(e: React.SyntheticEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setFormError(null);
+    try {
+      const payload = decodeTokenPayload();
+      if (!payload) { setFormError('Session expired — please sign in again.'); return; }
+
+      const res = await apiFetch('/api/clients', {
+        method: 'POST',
+        body: JSON.stringify({
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
+          email: form.email.trim(),
+          company: form.company.trim() || undefined,
+          subscribed: form.subscribed,
+          userId: payload.userId,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setFormError(data.error ?? 'Failed to create client'); return; }
+
+      setOpen(false);
+      await load();
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : 'Failed');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Clients</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Clients</h1>
+        <Button onClick={openNew}>New Client</Button>
       </div>
 
-      {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+      {error && <p className="text-sm text-destructive mb-4">{error}</p>}
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              {['Name', 'Email', 'Company', 'Subscribed', 'Joined'].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
+      <div className="rounded-xl border bg-card overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Company</TableHead>
+              <TableHead>Subscribed</TableHead>
+              <TableHead>Joined</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {clients.map((c) => (
-              <tr key={c.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3 text-sm">
-                  <Link href={`/clients/${c.id}`} className="font-medium text-indigo-600 hover:text-indigo-800">
+              <TableRow key={c.id}>
+                <TableCell className="font-medium">
+                  <Link href={`/clients/${c.id}`} className="text-primary hover:underline">
                     {c.firstName} {c.lastName}
                   </Link>
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600">{c.email}</td>
-                <td className="px-4 py-3 text-sm text-gray-600">{c.company ?? '—'}</td>
-                <td className="px-4 py-3 text-sm">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${c.subscribed ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                </TableCell>
+                <TableCell className="text-muted-foreground">{c.email}</TableCell>
+                <TableCell className="text-muted-foreground">{c.company ?? '—'}</TableCell>
+                <TableCell>
+                  <Badge variant={c.subscribed ? 'default' : 'secondary'}>
                     {c.subscribed ? 'Yes' : 'No'}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-500">
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-muted-foreground">
                   {new Date(c.createdAt).toLocaleDateString()}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
             {!loading && clients.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-400">
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                   No clients yet.
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
-      {loading && <p className="mt-4 text-sm text-gray-400">Loading…</p>}
-
+      {loading && <p className="mt-4 text-sm text-muted-foreground">Loading…</p>}
       {hasMore && !loading && (
-        <button
-          onClick={() => load(cursor ?? undefined)}
-          className="mt-4 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
-        >
+        <Button variant="ghost" size="sm" className="mt-4" onClick={() => load(cursor ?? undefined)}>
           Load more
-        </button>
+        </Button>
       )}
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>New Client</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4 py-2">
+            {formError && <p className="text-sm text-destructive">{formError}</p>}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="firstName">First Name *</Label>
+                <Input id="firstName" value={form.firstName}
+                  onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="lastName">Last Name *</Label>
+                <Input id="lastName" value={form.lastName}
+                  onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))} required />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email *</Label>
+              <Input id="email" type="email" value={form.email}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="company">Company</Label>
+              <Input id="company" value={form.company}
+                onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))} />
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox id="subscribed" checked={form.subscribed}
+                onCheckedChange={(checked) => setForm((f) => ({ ...f, subscribed: !!checked }))} />
+              <Label htmlFor="subscribed">Subscribed to updates</Label>
+            </div>
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={saving}>{saving ? 'Creating…' : 'Create Client'}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
