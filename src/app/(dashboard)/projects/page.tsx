@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { apiJson } from '@/lib/api';
@@ -30,7 +30,7 @@ const statusColors: Record<string, string> = {
   Cancelled: 'bg-red-100 text-red-700',
 };
 
-export default function ProjectsPage() {
+function ProjectsInner() {
   const searchParams = useSearchParams();
   const clientIdFilter = searchParams.get('clientId') ?? '';
   const [statusFilter, setStatusFilter] = useState('');
@@ -135,5 +135,13 @@ export default function ProjectsPage() {
         </button>
       )}
     </div>
+  );
+}
+
+export default function ProjectsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-sm text-gray-400">Loading…</div>}>
+      <ProjectsInner />
+    </Suspense>
   );
 }

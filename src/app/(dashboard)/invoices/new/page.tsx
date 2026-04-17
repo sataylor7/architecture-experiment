@@ -97,10 +97,14 @@ export default function NewInvoicePage() {
     setError(null);
     try {
       const payload = decodeTokenPayload();
+      if (!payload) {
+        setError('Session expired — please sign in again.');
+        return;
+      }
       const body: Record<string, unknown> = {
         invoiceNumber,
         clientId,
-        userId: payload?.userId ?? '',
+        userId: payload.userId,
         issueDate: new Date(issueDate).toISOString(),
         taxRate: parseFloat(taxRate) / 100,
         notes: notes || undefined,

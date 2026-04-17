@@ -453,3 +453,20 @@ export async function markInvoicePaid(id: string, { paidAt }: MarkPaidInput) {
     select: invoiceDetailSelect,
   });
 }
+
+export async function cancelInvoice(id: string) {
+  const invoice = await prisma.invoice.findUnique({
+    where: { id },
+    select: { id: true, status: true },
+  });
+  if (!invoice) throw new AppError(404, 'Invoice not found');
+  if (!(['Draft', 'Sent', 'Overdue'] as InvoiceStatus[]).includes(invoice.status)) {
+    throw new AppError(409, 'Only Draft, Sent, or Overdue invoices can be cancelled');
+  }
+
+  return prisma.invoice.update({
+    where: { id },
+    data: { status: 'Cancelled' },
+    select: invoiceDetailSelect,
+  });
+}

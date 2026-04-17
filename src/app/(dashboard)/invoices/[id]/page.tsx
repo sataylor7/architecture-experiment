@@ -103,10 +103,7 @@ export default function InvoiceDetailPage() {
     setActing(true);
     setActionError(null);
     try {
-      const res = await apiFetch(`/api/invoices/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: 'Cancelled' }),
-      });
+      const res = await apiFetch(`/api/invoices/${id}/cancel`, { method: 'POST' });
       const body = await res.json();
       if (!res.ok) { setActionError(body.error ?? 'Failed'); return; }
       setInvoice(body.data);
@@ -158,7 +155,7 @@ export default function InvoiceDetailPage() {
               Mark Paid
             </button>
           )}
-          {(invoice.status === 'Draft') && (
+          {(['Draft', 'Sent', 'Overdue'] as const).includes(invoice.status as 'Draft' | 'Sent' | 'Overdue') && (
             <button onClick={handleCancel} disabled={acting} className="text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors">
               Cancel
             </button>

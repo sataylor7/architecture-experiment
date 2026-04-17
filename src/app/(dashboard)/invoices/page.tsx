@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { apiJson } from '@/lib/api';
@@ -31,7 +31,7 @@ const statusColors: Record<string, string> = {
   Cancelled: 'bg-gray-100 text-gray-400',
 };
 
-export default function InvoicesPage() {
+function InvoicesInner() {
   const searchParams = useSearchParams();
   const clientIdFilter = searchParams.get('clientId') ?? '';
   const [statusFilter, setStatusFilter] = useState('');
@@ -140,5 +140,13 @@ export default function InvoicesPage() {
         </button>
       )}
     </div>
+  );
+}
+
+export default function InvoicesPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-sm text-gray-400">Loading…</div>}>
+      <InvoicesInner />
+    </Suspense>
   );
 }
