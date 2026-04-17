@@ -37,6 +37,10 @@ export async function requestCode(email: string, ipAddress?: string): Promise<vo
   const plainCode = randomInt(100000, 999999).toString();
   const codeHash = await bcrypt.hash(plainCode, 10);
 
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`[DEV] OTP code for ${email}: ${plainCode}`);
+  }
+
   await prisma.authCode.create({
     data: {
       userId: user.id,
