@@ -101,6 +101,7 @@ async function recomputeInvoiceTotals(
   await tx.invoice.update({
     where: { id: invoiceId },
     data: { subtotal, taxAmount, total },
+    select: { id: true },
   });
 }
 
@@ -228,13 +229,30 @@ export async function updateInvoice(id: string, data: UpdateInvoiceInput) {
     if (conflict) throw new AppError(409, 'Invoice number already in use');
   }
 
+  if (data.taxRate !== undefined) {
+    return prisma.$transaction(async (tx) => {
+      await tx.invoice.update({
+        where: { id },
+        data: {
+          ...(data.invoiceNumber !== undefined ? { invoiceNumber: data.invoiceNumber } : {}),
+          ...(data.issueDate !== undefined ? { issueDate: data.issueDate } : {}),
+          ...(data.dueDate !== undefined ? { dueDate: data.dueDate } : {}),
+          taxRate: new Prisma.Decimal(data.taxRate!),
+          ...(data.notes !== undefined ? { notes: data.notes } : {}),
+        },
+        select: { id: true },
+      });
+      await recomputeInvoiceTotals(id, tx);
+      return tx.invoice.findUniqueOrThrow({ where: { id }, select: invoiceDetailSelect });
+    });
+  }
+
   return prisma.invoice.update({
     where: { id },
     data: {
       ...(data.invoiceNumber !== undefined ? { invoiceNumber: data.invoiceNumber } : {}),
       ...(data.issueDate !== undefined ? { issueDate: data.issueDate } : {}),
       ...(data.dueDate !== undefined ? { dueDate: data.dueDate } : {}),
-      ...(data.taxRate !== undefined ? { taxRate: new Prisma.Decimal(data.taxRate) } : {}),
       ...(data.notes !== undefined ? { notes: data.notes } : {}),
     },
     select: invoiceDetailSelect,
@@ -396,6 +414,7 @@ export async function unlinkProject(invoiceId: string, projectId: string) {
 
   await prisma.projectInvoice.delete({
     where: { projectId_invoiceId: { projectId, invoiceId } },
+    select: { projectId: true },
   });
 }
 
