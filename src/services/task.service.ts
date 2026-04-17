@@ -161,12 +161,13 @@ export async function deleteTask(id: string) {
   });
   if (!existing) throw new AppError(404, 'Task not found');
 
-  if (!existing.parentTaskId) {
-    // Root task: delete subtasks first (schema has no cascade on self-reference)
-    await prisma.task.deleteMany({ where: { parentTaskId: id } });
-  }
-
-  await prisma.task.delete({ where: { id }, select: { id: true } });
+  await prisma.$transaction(async (tx) => {
+    if (!existing.parentTaskId) {
+      // Root task: delete subtasks first (schema has no cascade on self-reference)
+      await tx.task.deleteMany({ where: { parentTaskId: id } });
+    }
+    await tx.task.delete({ where: { id }, select: { id: true } });
+  });
 }
 
 // ─── List subtasks ────────────────────────────────────────────────────────────

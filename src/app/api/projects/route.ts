@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/middleware/auth';
 import { withRole } from '@/middleware/rbac';
 import { AuthedRequest } from '@/middleware/auth';
 import { CreateProjectSchema, ListProjectsSchema } from '@/lib/schemas/project.schema';
 import { createProject, listProjects } from '@/services/project.service';
 import { AppError } from '@/lib/errors';
 
-export const GET = withAuth(async (req: AuthedRequest) => {
+export const GET = withRole('admin')(async (req: AuthedRequest) => {
   const { searchParams } = req.nextUrl;
   const result = ListProjectsSchema.safeParse({
     cursor: searchParams.get('cursor') ?? undefined,
@@ -22,7 +21,7 @@ export const GET = withAuth(async (req: AuthedRequest) => {
   }
 
   try {
-    const data = await listProjects(result.data, req.user.role, req.user.sub);
+    const data = await listProjects(result.data);
     return NextResponse.json(data);
   } catch (err) {
     if (err instanceof AppError) return NextResponse.json({ error: err.message }, { status: err.statusCode });

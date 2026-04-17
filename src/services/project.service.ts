@@ -54,8 +54,6 @@ function syncStatusAndCompleted(data: { status?: string; completed?: boolean }) 
 
 export async function listProjects(
   { cursor, limit, status, clientId, projectTypeId, dueDateFrom, dueDateTo }: ListProjectsInput,
-  role: 'admin' | 'client',
-  requestingUserId: string,
 ) {
   const where: Prisma.ProjectWhereInput = {};
 
@@ -70,23 +68,13 @@ export async function listProjects(
   if (projectTypeId) {
     where.projectTypes = { some: { projectTypeId } };
   }
-  if (role === 'client') {
-    const clientRecord = await prisma.client.findFirst({
-      where: { userId: requestingUserId },
-      select: { id: true },
-    });
-    if (clientRecord) where.clientId = clientRecord.id;
-    else return { data: [], meta: { nextCursor: null, hasMore: false } };
-  }
-
-  const select = role === 'admin' ? adminProjectSelect : clientProjectSelect;
 
   const items = await prisma.project.findMany({
     take: limit + 1,
     ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
     orderBy: { createdAt: 'desc' },
     where,
-    select,
+    select: adminProjectSelect,
   });
 
   const hasMore = items.length > limit;
@@ -108,10 +96,13 @@ export async function getProjectById(
   if (!project) throw new AppError(404, 'Project not found');
 
   if (role === 'client') {
-    const clientRecord = await prisma.client.findFirst({
-      where: { userId: requestingUserId },
-      select: { id: true },
+    const user = await prisma.user.findUnique({
+      where: { id: requestingUserId },
+      select: { email: true },
     });
+    const clientRecord = user
+      ? await prisma.client.findUnique({ where: { email: user.email }, select: { id: true } })
+      : null;
     if (!clientRecord || project.clientId !== clientRecord.id) {
       throw new AppError(403, 'Forbidden');
     }
@@ -226,10 +217,13 @@ export async function listProjectTasks(id: string, role: 'admin' | 'client', req
   if (!project) throw new AppError(404, 'Project not found');
 
   if (role === 'client') {
-    const clientRecord = await prisma.client.findFirst({
-      where: { userId: requestingUserId },
-      select: { id: true },
+    const user = await prisma.user.findUnique({
+      where: { id: requestingUserId },
+      select: { email: true },
     });
+    const clientRecord = user
+      ? await prisma.client.findUnique({ where: { email: user.email }, select: { id: true } })
+      : null;
     if (!clientRecord || project.clientId !== clientRecord.id) {
       throw new AppError(403, 'Forbidden');
     }
