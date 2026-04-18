@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { apiJson, apiFetch } from '@/lib/api';
+import { Button } from '@/components/ui/button';
 
 interface Invoice {
   id: string;
@@ -203,7 +204,7 @@ export default function EditInvoicePage() {
   return (
     <div className="p-8 max-w-3xl">
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => router.back()} className="text-sm text-gray-400 hover:text-gray-600">← Back</button>
+        <Button variant="ghost" size="sm" onClick={() => router.back()}>← Back</Button>
         <h1 className="text-2xl font-semibold text-gray-900">Edit Invoice</h1>
       </div>
 
@@ -249,8 +250,8 @@ export default function EditInvoicePage() {
                 <button key={p.id} type="button" onClick={() => toggleProject(p.id)}
                   className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${
                     linkedProjectIds.includes(p.id)
-                      ? 'bg-indigo-600 text-white border-indigo-600'
-                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background text-foreground border-input hover:bg-muted'
                   }`}>
                   {p.name}
                 </button>
@@ -262,9 +263,7 @@ export default function EditInvoicePage() {
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Line Items</h2>
-            <button type="button" onClick={addLineItem} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-              + Add Item
-            </button>
+            <Button type="button" variant="ghost" size="sm" onClick={addLineItem}>+ Add Item</Button>
           </div>
           <div className="space-y-3">
             {lineItems.map((li) => (
@@ -287,7 +286,7 @@ export default function EditInvoicePage() {
                 <div className="w-24 py-2 text-sm font-medium text-gray-700 text-right">
                   ${((parseFloat(li.quantity) || 0) * (parseFloat(li.unitPrice) || 0)).toFixed(2)}
                 </div>
-                <button type="button" onClick={() => removeLineItem(li.key)} className="py-2 text-gray-400 hover:text-red-500 transition-colors">✕</button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => removeLineItem(li.key)}>✕</Button>
               </div>
             ))}
           </div>
@@ -299,12 +298,8 @@ export default function EditInvoicePage() {
         </div>
 
         <div className="flex justify-end gap-3">
-          <button type="button" onClick={() => router.back()} className="text-sm font-medium text-gray-500 hover:text-gray-700 px-4 py-2 rounded-lg border border-gray-200 transition-colors">
-            Cancel
-          </button>
-          <button type="submit" disabled={saving} className="text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg disabled:opacity-50 transition-colors">
-            {saving ? 'Saving…' : 'Save Changes'}
-          </button>
+          <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
+          <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save Changes'}</Button>
         </div>
       </form>
     </div>

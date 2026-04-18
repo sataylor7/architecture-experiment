@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { apiJson, apiFetch } from '@/lib/api';
+import { Button } from '@/components/ui/button';
 
 interface Project {
   id: string;
@@ -183,7 +184,7 @@ export default function ProjectDetailPage() {
   return (
     <div className="p-8">
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => router.back()} className="text-sm text-gray-400 hover:text-gray-600">← Back</button>
+        <Button variant="ghost" size="sm" onClick={() => router.back()}>← Back</Button>
         <h1 className="text-2xl font-semibold text-gray-900">{project.name}</h1>
         <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${statusBgColors[project.status] ?? 'bg-gray-100 text-gray-600'}`}>
           {project.status}
@@ -213,12 +214,7 @@ export default function ProjectDetailPage() {
 
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-semibold text-gray-900">Task Board</h2>
-        <button
-          onClick={() => setShowNewTask(true)}
-          className="text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg transition-colors"
-        >
-          + Add Task
-        </button>
+        <Button size="sm" onClick={() => setShowNewTask(true)}>+ Add Task</Button>
       </div>
 
       {showNewTask && (
@@ -246,12 +242,8 @@ export default function ProjectDetailPage() {
             </select>
           </div>
           <div className="flex gap-2">
-            <button type="submit" disabled={saving} className="text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors">
-              {saving ? 'Saving…' : 'Add'}
-            </button>
-            <button type="button" onClick={() => setShowNewTask(false)} className="text-sm font-medium text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-lg transition-colors">
-              Cancel
-            </button>
+            <Button type="submit" size="sm" disabled={saving}>{saving ? 'Saving…' : 'Add'}</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setShowNewTask(false)}>Cancel</Button>
           </div>
         </form>
       )}

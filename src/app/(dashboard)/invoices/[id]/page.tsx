@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiJson, apiFetch } from '@/lib/api';
+import { Button } from '@/components/ui/button';
 
 interface LineItem {
   id: string;
@@ -134,7 +135,7 @@ export default function InvoiceDetailPage() {
   return (
     <div className="p-8 max-w-4xl">
       <div className="flex items-center gap-3 mb-6 flex-wrap">
-        <button onClick={() => router.back()} className="text-sm text-gray-400 hover:text-gray-600">← Back</button>
+        <Button variant="ghost" size="sm" onClick={() => router.back()}>← Back</Button>
         <h1 className="text-2xl font-semibold text-gray-900">{invoice.invoiceNumber}</h1>
         <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[invoice.status] ?? 'bg-gray-100 text-gray-600'}`}>
           {invoice.status}
@@ -146,24 +147,16 @@ export default function InvoiceDetailPage() {
             </Link>
           )}
           {invoice.status === 'Draft' && (
-            <button onClick={handleSend} disabled={acting} className="text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors">
-              Send
-            </button>
+            <Button size="sm" onClick={handleSend} disabled={acting}>Send</Button>
           )}
           {(invoice.status === 'Sent' || invoice.status === 'Overdue') && (
-            <button onClick={handleMarkPaid} disabled={acting} className="text-sm font-medium text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors">
-              Mark Paid
-            </button>
+            <Button size="sm" onClick={handleMarkPaid} disabled={acting}>Mark Paid</Button>
           )}
           {(['Draft', 'Sent', 'Overdue'] as const).includes(invoice.status as 'Draft' | 'Sent' | 'Overdue') && (
-            <button onClick={handleCancel} disabled={acting} className="text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors">
-              Cancel
-            </button>
+            <Button size="sm" variant="outline" onClick={handleCancel} disabled={acting}>Cancel</Button>
           )}
           {(invoice.status === 'Draft' || invoice.status === 'Cancelled') && (
-            <button onClick={handleDelete} disabled={acting} className="text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors">
-              Delete
-            </button>
+            <Button size="sm" variant="destructive" onClick={handleDelete} disabled={acting}>Delete</Button>
           )}
         </div>
       </div>

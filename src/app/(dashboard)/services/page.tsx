@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { apiJson, apiFetch } from '@/lib/api';
+import { Button } from '@/components/ui/button';
 
 interface Service {
   id: string;
@@ -128,12 +129,7 @@ export default function ServicesPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Service Catalog</h1>
-        <button
-          onClick={openNew}
-          className="text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg transition-colors"
-        >
-          + New Service
-        </button>
+        <Button onClick={openNew}>+ New Service</Button>
       </div>
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
@@ -178,14 +174,8 @@ export default function ServicesPage() {
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-4">
-            <button type="button" onClick={() => setShowForm(false)}
-              className="text-sm font-medium text-gray-500 hover:text-gray-700 px-4 py-2 rounded-lg border border-gray-200 transition-colors">
-              Cancel
-            </button>
-            <button type="submit" disabled={saving}
-              className="text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg disabled:opacity-50 transition-colors">
-              {saving ? 'Saving…' : editId ? 'Save Changes' : 'Create Service'}
-            </button>
+            <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : editId ? 'Save Changes' : 'Create Service'}</Button>
           </div>
         </form>
       )}
@@ -224,11 +214,11 @@ export default function ServicesPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-sm">
-                  <div className="flex items-center gap-3">
-                    <button onClick={() => openEdit(s)} className="text-indigo-600 hover:text-indigo-800 text-xs font-medium">Edit</button>
-                    <button onClick={() => toggleActive(s)} className="text-gray-500 hover:text-gray-700 text-xs font-medium">
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="ghost" onClick={() => openEdit(s)}>Edit</Button>
+                    <Button size="sm" variant="ghost" onClick={() => toggleActive(s)}>
                       {s.active ? 'Deactivate' : 'Activate'}
-                    </button>
+                    </Button>
                   </div>
                 </td>
               </tr>
@@ -246,9 +236,9 @@ export default function ServicesPage() {
 
       {loading && <p className="mt-4 text-sm text-gray-400">Loading…</p>}
       {hasMore && !loading && (
-        <button onClick={() => load(cursor ?? undefined)} className="mt-4 text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+        <Button variant="ghost" size="sm" className="mt-4" onClick={() => load(cursor ?? undefined)}>
           Load more
-        </button>
+        </Button>
       )}
     </div>
   );

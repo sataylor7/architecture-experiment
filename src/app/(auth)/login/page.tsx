@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { setAccessToken } from '@/lib/token-store';
+import { Button } from '@/components/ui/button';
 
 type Step = 'email' | 'code';
 
@@ -100,13 +101,9 @@ export default function LoginPage() {
 
             {error && <p className="text-sm text-red-600">{error}</p>}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2 px-4 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
+            <Button type="submit" disabled={loading} className="w-full">
               {loading ? 'Sending…' : 'Send code'}
-            </button>
+            </Button>
           </form>
         ) : (
           <form onSubmit={handleCodeSubmit} className="space-y-4">
@@ -131,21 +128,14 @@ export default function LoginPage() {
 
             {error && <p className="text-sm text-red-600">{error}</p>}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2 px-4 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
+            <Button type="submit" disabled={loading} className="w-full">
               {loading ? 'Verifying…' : 'Verify code'}
-            </button>
+            </Button>
 
-            <button
-              type="button"
-              onClick={() => { setStep('email'); setCode(''); setError(null); }}
-              className="w-full py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-            >
+            <Button type="button" variant="ghost" className="w-full"
+              onClick={() => { setStep('email'); setCode(''); setError(null); }}>
               Use a different email
-            </button>
+            </Button>
           </form>
         )}
       </div>

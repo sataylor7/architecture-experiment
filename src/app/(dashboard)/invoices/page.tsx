@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { apiJson } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Invoice {
   id: string;
@@ -74,14 +76,15 @@ function InvoicesInner() {
       </div>
 
       <div className="flex gap-2 mb-4">
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-          <option value="">All Statuses</option>
-          {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
+        <Select value={statusFilter || '_all'} onValueChange={(v) => setStatusFilter(!v || v === '_all' ? '' : v)}>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="_all">All Statuses</SelectItem>
+            {STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
@@ -132,12 +135,9 @@ function InvoicesInner() {
 
       {loading && <p className="mt-4 text-sm text-gray-400">Loading…</p>}
       {hasMore && !loading && (
-        <button
-          onClick={() => load(cursor ?? undefined)}
-          className="mt-4 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
-        >
+        <Button variant="ghost" size="sm" className="mt-4" onClick={() => load(cursor ?? undefined)}>
           Load more
-        </button>
+        </Button>
       )}
     </div>
   );

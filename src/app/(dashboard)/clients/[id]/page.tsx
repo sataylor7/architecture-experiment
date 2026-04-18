@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiJson } from '@/lib/api';
+import { Button } from '@/components/ui/button';
 
 interface Client {
   id: string;
@@ -80,7 +81,7 @@ export default function ClientDetailPage() {
   return (
     <div className="p-8 max-w-4xl">
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => router.back()} className="text-sm text-gray-400 hover:text-gray-600">← Back</button>
+        <Button variant="ghost" size="sm" onClick={() => router.back()}>← Back</Button>
         <h1 className="text-2xl font-semibold text-gray-900">
           {client.firstName} {client.lastName}
         </h1>
