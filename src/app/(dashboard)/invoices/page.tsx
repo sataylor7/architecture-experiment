@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { apiJson } from '@/lib/api';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Invoice {
@@ -67,12 +67,7 @@ function InvoicesInner() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Invoices</h1>
-        <Link
-          href="/invoices/new"
-          className="text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg transition-colors"
-        >
-          New Invoice
-        </Link>
+        <Link href="/invoices/new" className={buttonVariants()}>New Invoice</Link>
       </div>
 
       <div className="flex gap-2 mb-4">
