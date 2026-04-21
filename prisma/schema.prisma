@@ -49,20 +49,59 @@ model Client {
   lastName     String
   email        String    @unique
   company      String?
-  socialMedia  Json?
   userId       String
   subscribed   Boolean   @default(false)
   taxId        String?
-  measurements Json?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  user         User      @relation(fields: [userId], references: [id])
+  user         User                  @relation(fields: [userId], references: [id])
   projects     Project[]
   invoices     Invoice[]
+  socialMedia  ClientSocialMedia?
+  measurements ClientMeasurements?
 
   @@index([userId])
   @@index([email])
+}
+
+model ClientSocialMedia {
+  id        String  @id @default(uuid())
+  clientId  String  @unique
+  facebook  String?
+  instagram String?
+  twitter   String?
+  linkedin  String?
+  github    String?
+
+  client    Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+enum MeasurementUnit {
+  Inches
+  Centimeters
+}
+
+model ClientMeasurements {
+  id               String           @id @default(uuid())
+  clientId         String           @unique
+  unit             MeasurementUnit  @default(Inches)
+  neck             Decimal?         @db.Decimal(6, 2)
+  shoulder         Decimal?         @db.Decimal(6, 2)
+  shoulderToElbow  Decimal?         @db.Decimal(6, 2)
+  bicep            Decimal?         @db.Decimal(6, 2)
+  wrist            Decimal?         @db.Decimal(6, 2)
+  chest            Decimal?         @db.Decimal(6, 2)
+  waist            Decimal?         @db.Decimal(6, 2)
+  hip              Decimal?         @db.Decimal(6, 2)
+  thigh            Decimal?         @db.Decimal(6, 2)
+  ankle            Decimal?         @db.Decimal(6, 2)
+  hipToKnee        Decimal?         @db.Decimal(6, 2)
+  crotchLength     Decimal?         @db.Decimal(6, 2)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  client           Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
 model Project {
