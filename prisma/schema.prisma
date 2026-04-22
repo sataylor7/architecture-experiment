@@ -128,6 +128,12 @@ model ClientMeasurements {
   ankle            Decimal?         @db.Decimal(6, 2)
   hipToKnee        Decimal?         @db.Decimal(6, 2)
   crotchLength     Decimal?         @db.Decimal(6, 2)
+  sleeve           Decimal?         @db.Decimal(6, 2)
+  inseam           Decimal?         @db.Decimal(6, 2)
+  outseam          Decimal?         @db.Decimal(6, 2)
+  rise             Decimal?         @db.Decimal(6, 2)
+  height           Decimal?         @db.Decimal(6, 2)
+  weight           Decimal?         @db.Decimal(6, 2)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 

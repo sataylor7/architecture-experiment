@@ -40,6 +40,12 @@ interface Measurements {
   ankle: string | null;
   hipToKnee: string | null;
   crotchLength: string | null;
+  sleeve: string | null;
+  inseam: string | null;
+  outseam: string | null;
+  rise: string | null;
+  height: string | null;
+  weight: string | null;
 }
 
 interface Client {
@@ -95,6 +101,12 @@ const MEASUREMENT_FIELDS: { key: keyof Omit<Measurements, 'id' | 'unit'>; label:
   { key: 'ankle',          label: 'Ankle' },
   { key: 'hipToKnee',      label: 'Hip to Knee' },
   { key: 'crotchLength',   label: 'Crotch Length' },
+  { key: 'sleeve',         label: 'Sleeve' },
+  { key: 'inseam',         label: 'Inseam' },
+  { key: 'outseam',        label: 'Outseam' },
+  { key: 'rise',           label: 'Rise' },
+  { key: 'height',         label: 'Height' },
+  { key: 'weight',         label: 'Weight' },
 ];
 
 const emptySocialForm = { facebook: '', instagram: '', twitter: '', linkedin: '', github: '' };
@@ -102,6 +114,7 @@ const emptyMeasurementsForm = {
   unit: 'Inches' as 'Inches' | 'Centimeters',
   neck: '', shoulder: '', shoulderToElbow: '', bicep: '', wrist: '',
   chest: '', waist: '', hip: '', thigh: '', ankle: '', hipToKnee: '', crotchLength: '',
+  sleeve: '', inseam: '', outseam: '', rise: '', height: '', weight: '',
 };
 
 export default function ClientDetailPage() {
@@ -200,6 +213,12 @@ export default function ClientDetailPage() {
       ankle:           m?.ankle           ?? '',
       hipToKnee:       m?.hipToKnee       ?? '',
       crotchLength:    m?.crotchLength     ?? '',
+      sleeve:          m?.sleeve          ?? '',
+      inseam:          m?.inseam          ?? '',
+      outseam:         m?.outseam         ?? '',
+      rise:            m?.rise            ?? '',
+      height:          m?.height          ?? '',
+      weight:          m?.weight          ?? '',
     });
     setMeasurementsError(null);
     setEditMeasurements(true);

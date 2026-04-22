@@ -37,6 +37,12 @@ const measurementsSelect = {
   ankle: true,
   hipToKnee: true,
   crotchLength: true,
+  sleeve: true,
+  inseam: true,
+  outseam: true,
+  rise: true,
+  height: true,
+  weight: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -241,10 +247,11 @@ export async function upsertClientMeasurements(clientId: string, data: UpsertCli
   const client = await prisma.client.findUnique({ where: { id: clientId }, select: { id: true } });
   if (!client) throw new AppError(404, 'Client not found');
 
+  const { unit, ...rest } = data;
   return prisma.clientMeasurements.upsert({
     where: { clientId },
-    create: { clientId, unit: data.unit as MeasurementUnit, ...data },
-    update: { unit: data.unit as MeasurementUnit, ...data },
+    create: { clientId, unit: unit as MeasurementUnit, ...rest },
+    update: { unit: unit as MeasurementUnit, ...rest },
     select: measurementsSelect,
   });
 }

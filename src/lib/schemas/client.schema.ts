@@ -46,6 +46,12 @@ export const UpsertClientMeasurementsSchema = z.object({
   ankle:          z.number().positive().optional().nullable(),
   hipToKnee:      z.number().positive().optional().nullable(),
   crotchLength:   z.number().positive().optional().nullable(),
+  sleeve:         z.number().positive().optional().nullable(),
+  inseam:         z.number().positive().optional().nullable(),
+  outseam:        z.number().positive().optional().nullable(),
+  rise:           z.number().positive().optional().nullable(),
+  height:         z.number().positive().optional().nullable(),
+  weight:         z.number().positive().optional().nullable(),
 });
 
 export type CreateClientInput = z.infer<typeof CreateClientSchema>;
