@@ -23,6 +23,7 @@ interface SocialMedia {
   twitter: string | null;
   linkedin: string | null;
   github: string | null;
+  tiktok: string | null;
 }
 
 interface Measurements {
@@ -109,7 +110,7 @@ const MEASUREMENT_FIELDS: { key: keyof Omit<Measurements, 'id' | 'unit'>; label:
   { key: 'weight',         label: 'Weight' },
 ];
 
-const emptySocialForm = { facebook: '', instagram: '', twitter: '', linkedin: '', github: '' };
+const emptySocialForm = { facebook: '', instagram: '', twitter: '', linkedin: '', github: '', tiktok: '' };
 const emptyMeasurementsForm = {
   unit: 'Inches' as 'Inches' | 'Centimeters',
   neck: '', shoulder: '', shoulderToElbow: '', bicep: '', wrist: '',
@@ -167,6 +168,7 @@ export default function ClientDetailPage() {
       twitter:   client.socialMedia?.twitter   ?? '',
       linkedin:  client.socialMedia?.linkedin  ?? '',
       github:    client.socialMedia?.github    ?? '',
+      tiktok:    client.socialMedia?.tiktok    ?? '',
     });
     setSocialError(null);
     setEditSocial(true);
@@ -183,6 +185,7 @@ export default function ClientDetailPage() {
         twitter:   socialForm.twitter   || null,
         linkedin:  socialForm.linkedin  || null,
         github:    socialForm.github    || null,
+        tiktok:    socialForm.tiktok    || null,
       };
       const res = await apiFetch(`/api/clients/${id}/social-media`, { method: 'PUT', body: JSON.stringify(body) });
       const data = await res.json();
@@ -288,7 +291,7 @@ export default function ClientDetailPage() {
           <form onSubmit={handleSocialSubmit} className="space-y-3">
             {socialError && <p className="text-sm text-destructive">{socialError}</p>}
             <div className="grid grid-cols-2 gap-3">
-              {(['facebook', 'instagram', 'twitter', 'linkedin', 'github'] as const).map((platform) => (
+              {(['facebook', 'instagram', 'twitter', 'linkedin', 'github', 'tiktok'] as const).map((platform) => (
                 <div key={platform} className="space-y-1.5">
                   <Label htmlFor={`social-${platform}`} className="capitalize">{platform}</Label>
                   <Input
@@ -307,7 +310,7 @@ export default function ClientDetailPage() {
           </form>
         ) : (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            {(['facebook', 'instagram', 'twitter', 'linkedin', 'github'] as const).map((platform) => (
+            {(['facebook', 'instagram', 'twitter', 'linkedin', 'github', 'tiktok'] as const).map((platform) => (
               <div key={platform}>
                 <dt className="text-muted-foreground capitalize">{platform}</dt>
                 <dd className="font-medium truncate">{client.socialMedia?.[platform] ?? '—'}</dd>

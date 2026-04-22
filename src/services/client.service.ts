@@ -20,6 +20,7 @@ const socialMediaSelect = {
   twitter: true,
   linkedin: true,
   github: true,
+  tiktok: true,
 } as const;
 
 const measurementsSelect = {

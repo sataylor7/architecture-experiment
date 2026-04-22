@@ -30,6 +30,7 @@ export const UpsertClientSocialMediaSchema = z.object({
   twitter:   z.string().max(500).optional().nullable(),
   linkedin:  z.string().max(500).optional().nullable(),
   github:    z.string().max(500).optional().nullable(),
+  tiktok:    z.string().max(500).optional().nullable(),
 });
 
 export const UpsertClientMeasurementsSchema = z.object({

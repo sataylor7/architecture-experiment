@@ -103,6 +103,7 @@ model ClientSocialMedia {
   twitter   String?
   linkedin  String?
   github    String?
+  tiktok    String?
 
   client    Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
