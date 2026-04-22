@@ -14,6 +14,10 @@ function hashRefreshToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
+function refreshExpiresAt(): Date {
+  return new Date(Date.now() + REFRESH_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000);
+}
+
 // ─── Request OTP code ────────────────────────────────────────────────────────
 
 export async function requestCode(email: string, ipAddress?: string): Promise<void> {
@@ -22,15 +26,15 @@ export async function requestCode(email: string, ipAddress?: string): Promise<vo
     select: { id: true, deletedAt: true },
   });
 
-  // Return silently for non-existent or soft-deleted users — don't reveal account existence
+  // Return silently — don't reveal whether the account exists
   if (!user || user.deletedAt) {
     auditLog('auth.code_requested', { emailHash: hashEmail(email), ipAddress, found: false });
     return;
   }
 
-  // Invalidate all prior active OTP codes for this user (exclude refresh token records)
+  // Invalidate all prior active OTP codes for this user
   await prisma.authCode.updateMany({
-    where: { userId: user.id, usedAt: null, codeHash: { not: { startsWith: 'rt:' } } },
+    where: { userId: user.id, usedAt: null },
     data: { usedAt: new Date() },
   });
 
@@ -67,24 +71,15 @@ export async function verifyCode(
     select: { id: true, role: true, deletedAt: true },
   });
 
-  if (!user || user.deletedAt) {
-    throw new AppError(401, 'Invalid code');
-  }
+  if (!user || user.deletedAt) throw new AppError(401, 'Invalid code');
 
   const authCode = await prisma.authCode.findFirst({
-    where: {
-      userId: user.id,
-      usedAt: null,
-      expiresAt: { gt: new Date() },
-      codeHash: { not: { startsWith: 'rt:' } },
-    },
+    where: { userId: user.id, usedAt: null, expiresAt: { gt: new Date() } },
     select: { id: true, codeHash: true, attempts: true },
     orderBy: { createdAt: 'desc' },
   });
 
-  if (!authCode) {
-    throw new AppError(401, 'Invalid or expired code');
-  }
+  if (!authCode) throw new AppError(401, 'Invalid or expired code');
 
   if (authCode.attempts >= MAX_ATTEMPTS) {
     throw new AppError(401, 'Code has been locked after too many failed attempts');
@@ -98,50 +93,31 @@ export async function verifyCode(
       where: { id: authCode.id },
       data: {
         attempts: newAttempts,
-        // Burn the code if max attempts reached
         ...(newAttempts >= MAX_ATTEMPTS ? { usedAt: new Date() } : {}),
       },
     });
-
     auditLog('auth.code_failed', { userId: user.id, ipAddress, attempts: newAttempts });
     throw new AppError(401, 'Invalid code');
   }
 
-  // Mark code as used
   await prisma.authCode.update({
     where: { id: authCode.id },
     data: { usedAt: new Date() },
   });
 
-  // Update last login
   await prisma.user.update({
     where: { id: user.id },
     data: { lastLoginAt: new Date() },
   });
 
-  // Issue access token
   const accessToken = signAccessToken({ sub: user.id, role: user.role });
 
-  // Issue refresh token
   const refreshToken = randomBytes(32).toString('hex');
-  const refreshTokenHash = hashRefreshToken(refreshToken);
-  const refreshExpiresAt = new Date(
-    Date.now() + REFRESH_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000,
-  );
-
-  // Store refresh token hash — reuse AuthCode table isn't appropriate; store in a dedicated field
-  // We store refresh tokens in a separate approach using a dedicated table approach
-  // For now, we store hash in a simple way via a future RefreshToken model.
-  // Since CLAUDE.md doesn't define a RefreshToken model but describes storing the hash,
-  // we attach it as a codeHash entry with a special marker in the AuthCode table temporarily.
-  // IMPORTANT: In a real implementation, add a RefreshToken model. For Phase 1 we store
-  // the hash in a lightweight fashion using a special sentinel expiresAt far in the future.
-  await prisma.authCode.create({
+  await prisma.refreshToken.create({
     data: {
       userId: user.id,
-      codeHash: `rt:${refreshTokenHash}`,
-      expiresAt: refreshExpiresAt,
-      usedAt: null,
+      tokenHash: hashRefreshToken(refreshToken),
+      expiresAt: refreshExpiresAt(),
       ipAddress: ipAddress ?? null,
     },
   });
@@ -159,31 +135,24 @@ export async function refreshAccessToken(
 ): Promise<{ accessToken: string; refreshToken: string }> {
   const tokenHash = hashRefreshToken(refreshToken);
 
-  const record = await prisma.authCode.findFirst({
-    where: {
-      codeHash: `rt:${tokenHash}`,
-      usedAt: null,
-      expiresAt: { gt: new Date() },
-    },
-    select: { id: true, userId: true },
+  const record = await prisma.refreshToken.findUnique({
+    where: { tokenHash },
+    select: { id: true, userId: true, expiresAt: true, revokedAt: true },
   });
 
-  if (!record) {
-    // Check if this was a revoked token — if so, revoke all sessions
-    const revokedRecord = await prisma.authCode.findFirst({
-      where: { codeHash: `rt:${tokenHash}`, usedAt: { not: null } },
-      select: { userId: true },
+  if (!record) throw new AppError(401, 'Invalid or expired refresh token');
+
+  // Reuse of a revoked token — kill all sessions for this user immediately
+  if (record.revokedAt) {
+    await prisma.refreshToken.updateMany({
+      where: { userId: record.userId, revokedAt: null },
+      data: { revokedAt: new Date() },
     });
+    auditLog('auth.reuse_detected', { userId: record.userId, ipAddress });
+    throw new AppError(401, 'Invalid or expired refresh token');
+  }
 
-    if (revokedRecord) {
-      // Reuse of revoked token: delete all refresh tokens for this user
-      await prisma.authCode.updateMany({
-        where: { userId: revokedRecord.userId, codeHash: { startsWith: 'rt:' }, usedAt: null },
-        data: { usedAt: new Date() },
-      });
-      auditLog('auth.reuse_detected', { userId: revokedRecord.userId, ipAddress });
-    }
-
+  if (record.expiresAt < new Date()) {
     throw new AppError(401, 'Invalid or expired refresh token');
   }
 
@@ -192,30 +161,21 @@ export async function refreshAccessToken(
     select: { id: true, role: true, deletedAt: true },
   });
 
-  if (!user || user.deletedAt) {
-    throw new AppError(401, 'Unauthorized');
-  }
+  if (!user || user.deletedAt) throw new AppError(401, 'Unauthorized');
 
-  // Rotate: mark old token as used
-  await prisma.authCode.update({
+  // Rotate: revoke old token, issue new one
+  await prisma.refreshToken.update({
     where: { id: record.id },
-    data: { usedAt: new Date() },
+    data: { revokedAt: new Date() },
   });
 
-  // Issue new tokens
   const accessToken = signAccessToken({ sub: user.id, role: user.role });
   const newRefreshToken = randomBytes(32).toString('hex');
-  const newRefreshTokenHash = hashRefreshToken(newRefreshToken);
-  const refreshExpiresAt = new Date(
-    Date.now() + REFRESH_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000,
-  );
-
-  await prisma.authCode.create({
+  await prisma.refreshToken.create({
     data: {
       userId: user.id,
-      codeHash: `rt:${newRefreshTokenHash}`,
-      expiresAt: refreshExpiresAt,
-      usedAt: null,
+      tokenHash: hashRefreshToken(newRefreshToken),
+      expiresAt: refreshExpiresAt(),
       ipAddress: ipAddress ?? null,
     },
   });
@@ -230,9 +190,9 @@ export async function refreshAccessToken(
 export async function logout(refreshToken: string, userId: string): Promise<void> {
   const tokenHash = hashRefreshToken(refreshToken);
 
-  await prisma.authCode.updateMany({
-    where: { userId, codeHash: `rt:${tokenHash}`, usedAt: null },
-    data: { usedAt: new Date() },
+  await prisma.refreshToken.updateMany({
+    where: { userId, tokenHash, revokedAt: null },
+    data: { revokedAt: new Date() },
   });
 
   auditLog('auth.logout', { userId });
